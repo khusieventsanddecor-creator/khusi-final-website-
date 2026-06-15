@@ -5,6 +5,7 @@ const quoteForm = document.querySelector("#quote-form");
 const formNote = document.querySelector("#form-note");
 const rsvpForm = document.querySelector("#rsvp-form");
 const rsvpNote = document.querySelector("#rsvp-note");
+const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const updateHeader = () => {
   if (!header) {
@@ -88,6 +89,57 @@ if (navToggle && header) {
 navLinks.forEach((link) => {
   link.addEventListener("click", closeNav);
 });
+
+if (!prefersReducedMotion) {
+  const revealTargets = document.querySelectorAll(
+    [
+      ".section-heading",
+      ".luxury-intro-grid > *",
+      ".editorial-card",
+      ".process-list article",
+      ".hire-copy",
+      ".hire-tags span",
+      ".gallery-preview-grid > *",
+      ".testimonial-grid figure",
+      ".faq-list details",
+      ".socials-copy",
+      ".social-card",
+      ".service-detail-card",
+      ".service-cta-inner",
+      ".gallery-grid figure",
+      ".launch-media-card",
+      ".quote-form",
+      ".contact-copy",
+      ".hire-only-card",
+      ".seo-link-list",
+    ].join(",")
+  );
+
+  if (revealTargets.length) {
+    document.body.classList.add("motion-ready");
+
+    revealTargets.forEach((element, index) => {
+      element.classList.add("luxury-reveal");
+      element.style.setProperty("--reveal-delay", `${Math.min(index % 6, 5) * 45}ms`);
+    });
+
+    const revealObserver = new IntersectionObserver(
+      (entries, observer) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) {
+            return;
+          }
+
+          entry.target.classList.add("is-visible");
+          observer.unobserve(entry.target);
+        });
+      },
+      { rootMargin: "0px 0px -12% 0px", threshold: 0.12 }
+    );
+
+    revealTargets.forEach((element) => revealObserver.observe(element));
+  }
+}
 
 if (quoteForm) {
   quoteForm.addEventListener("submit", async (event) => {
