@@ -1,28 +1,49 @@
-name: NodeJS with Webpack
+name: Static site checks
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
-  build:
+  validate:
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        node-version: [18.x, 20.x, 22.x]
-
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
+      - name: Check required website files
+        run: |
+          test -f index.html
+          test -f packages.html
+          test -f gallery.html
+          test -f contact.html
+          test -f styles.css
+          test -f script.js
+          test -f vercel.json
+          test -d assets
+          test -d api
 
-    - name: Build
-      run: |
-        npm install
-        npx webpack
+      - name: Check JavaScript syntax
+        run: node --check script.js
+
+      - name: Check referenced local media files
+        run: |
+          python3 - <<'PY'
+          import pathlib, re, sys
+          root = pathlib.Path('.')
+          files = list(root.glob('*.html')) + [root / 'styles.css']
+          missing = []
+          pattern = re.compile(r'assets/[^"\' )]+\.(?:jpg|jpeg|png|webp|mp4|svg)', re.I)
+          for file in files:
+              if not file.exists():
+                  continue
+              for asset in sorted(set(pattern.findall(file.read_text(errors='ignore')))):
+                  if not (root / asset).exists():
+                      missing.append(f'{file}: {asset}')
+          if missing:
+              print('Missing referenced assets:')
+              print('\n'.join(missing))
+              sys.exit(1)
+          PY
